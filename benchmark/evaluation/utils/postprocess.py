@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 
@@ -13,6 +14,10 @@ def post_average(metric_file, tech, complex, frequent):
         output_path = f"../../result/complex/{tech}.csv"
     if frequent != 0:
         output_path = f"../../result/frequent/{tech}.csv"
+    # Ensure parent dir exists
+    parent = os.path.dirname(output_path)
+    if parent and not os.path.exists(parent):
+        os.makedirs(parent, exist_ok=True)
     df.to_csv(output_path, index=False)
     df = pd.read_csv(output_path)
     transposed_df = df.transpose()

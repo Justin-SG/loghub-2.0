@@ -16,7 +16,7 @@ coverage.xml
 junit.xml
 tmpfile.rc
 .DS_Store
-.coverage*
+__pycache__/.coverage*
 *.bz2
 tempfile.rc
 conda-build/
