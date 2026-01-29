@@ -39,10 +39,11 @@ for ds in datasets:
         "param_id_checkpoint_dir": str(PARAM_ID_DIR / ds),
         
         "device": "cpu", # Default device, override with --device
-        "min_match_prob": 0.5,
+        "min_match_prob": 0.1,
+
         
         # Default flags (Overridden by CLI)
-        "use_grouper": False, 
+        "use_grouper": True, 
         "use_param_identifier": False,
         "preload_ground_truth": False,
     }

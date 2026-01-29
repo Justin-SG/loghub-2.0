@@ -83,17 +83,25 @@ def evaluator(
     if LogParser != None:
         print("start parsing.")
         parser = LogParser(**param_dict)
-        p = Process(target=parser.parse, args=(log_file_basename,))
-        p.start()
-        p.join(timeout=TIMEOUT)
-        if p.is_alive():
-            print('*** TIMEOUT for Template Identification')
-            p.terminate()
-            with open(parsedresult, 'w') as fw:
-                pass
-            return
+        
+        import platform
+        if platform.system() == "Windows":
+            # On Windows, multiprocessing.Process (spawn) often corrupts model weights/vocab
+            # Run directly in the main process for reliability.
+            parser.parse(log_file_basename)
+        else:
+            p = Process(target=parser.parse, args=(log_file_basename,))
+            p.start()
+            p.join(timeout=TIMEOUT)
+            if p.is_alive():
+                print('*** TIMEOUT for Template Identification')
+                p.terminate()
+                with open(parsedresult, 'w') as fw:
+                    pass
+                return
         print("end parsing.")
         parse_time = time.time() - start_time  # end_time is the wall-clock time in seconds
+
     else:
         parse_time = -1
     print("parsing time: ", parse_time)

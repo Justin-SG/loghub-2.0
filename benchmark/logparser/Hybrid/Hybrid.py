@@ -21,6 +21,7 @@ if str(REPO_ROOT) not in sys.path:
 from HybridParser.HybridParser import HybridParser  # type: ignore
 
 
+
 def _find_checkpoints_for_dataset(repo_root: Path, dataset: str) -> List[Path]:
     cand_roots = [repo_root / "results" / "actual", repo_root / "results" / "experiments"]
     found: List[Tuple[float, Path]] = []
@@ -80,7 +81,9 @@ class Params:
     min_match_prob: float = 0.5
     param_id_checkpoint: Optional[str] = None
     use_grouper: bool = True
+    use_param_identifier: bool = False
     preload_ground_truth: bool = False
+
 
 
 class LogParser:
@@ -96,6 +99,8 @@ class LogParser:
             **{k: v for k, v in kwargs.items() if k in Params.__annotations__}
         )
         self._parser: Optional[HybridParser] = None
+
+
 
     @staticmethod
     def _format_to_regex(log_format: str) -> re.Pattern:
@@ -167,8 +172,11 @@ class LogParser:
             device=device,
             min_match_prob=min_prob,
             param_id_checkpoint=pid_ckpt,
-            use_grouper=use_grouper
+            use_grouper=use_grouper,
+            use_param_identifier=self.params.use_param_identifier,
+            rex=self.params.rex
         )
+
         self._parser = hp
 
         # --- OPTIONAL: Pre-load Ground Truth Templates for Cache Benchmark ---
@@ -224,10 +232,9 @@ class LogParser:
                 s = line.rstrip("\n")
                 m = line_re.match(s)
                 content = m.group("Content") if (m and "Content" in m.groupdict()) else s
-                for rx in (self.params.rex or []):
-                    content = re.sub(rx, "<*>", content)
                 line_ids.append(idx)
                 contents.append(content)
+
                 
                 
                 
@@ -237,7 +244,8 @@ class LogParser:
 
         event_ids: List[int] = []
         event_templates: List[str] = []
-        for text in contents:
+        total_lines = len(contents)
+        for i, text in enumerate(contents):
             if not text:
                 event_ids.append(-1)
                 event_templates.append("")
@@ -245,6 +253,18 @@ class LogParser:
             gid, tpl = hp.group(text)
             event_ids.append(int(gid))
             event_templates.append(str(tpl))
+            
+            if (i + 1) % 5000 == 0:
+                print(f"Parsed {i+1}/{total_lines} lines...")
+
+        # Post-process: Map all lines to their FINAL refined template for this group
+        # This fixes the "template snapshot" issue where early lines keep unrefined strings.
+        #final_templates = {gid: tpl for gid, tpl in hp.grouper.templates()}
+        #for i in range(len(event_ids)):
+        #    gid = event_ids[i]
+        #    if gid != -1 and gid in final_templates:
+        #        event_templates[i] = final_templates[gid]
+
 
         out_df = pd.DataFrame(
             {

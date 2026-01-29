@@ -32,20 +32,20 @@ from logparser.Hybrid import LogParser
 
 
 DATASETS_2K = [
-    "Proxifier",
-    "Linux",
+#    "Proxifier",
+#    "Linux",
     "Apache",
-    "Zookeeper",
-    "Hadoop",
-    "HealthApp",
-    "OpenStack",
-    "HPC",
-    "Mac",
-    "OpenSSH",
-    "Spark",
-    "Thunderbird",
-    "BGL",
-    "HDFS",
+#    "Zookeeper",
+#    "Hadoop",
+#    "HealthApp",
+#    "OpenStack",
+#    "HPC",
+#    "Mac",
+#    "OpenSSH",
+#    "Spark",
+#    "Thunderbird",
+#    "BGL",
+#    "HDFS",
 ]
 
 DATASETS_FULL = DATASETS_2K.copy()
@@ -68,6 +68,9 @@ if __name__ == "__main__":
     # Hybrid Specific Args
     parser.add_argument('--no_grouper', action='store_true', help='Disable log grouper (Cache only if no PI)')
     parser.add_argument('--use_param_identifier', action='store_true', help='Enable Parameter Identifier')
+    import platform
+    default_workers = 1 if platform.system() == "Windows" else 8
+    parser.add_argument("--workers", type=int, default=default_workers, help="Number of processes to use")
     parser.add_argument('--run_name', type=str, default='', help='Suffix for output directory')
     parser.add_argument('--checkpoint_dir_grouper', type=str, default=None, help='Override grouper checkpoint dir')
     parser.add_argument('--checkpoint_dir_param', type=str, default=None, help='Override param identifier checkpoint dir')
@@ -154,9 +157,10 @@ if __name__ == "__main__":
         else:
             preload_gt = hset.get("preload_ground_truth", False)
 
-        # Validation: Cache Only mode (no grouper) usually requires preloaded GT to function meaningfully
-        if not use_grouper and not preload_gt:
-             raise ValueError(f"Dataset {dataset}: 'use_grouper' is False (Cache Only) but 'preload_ground_truth' is also False. The cache needs to be bootstrapped with GT templates to function without a grouper model.")
+        # Validation: Cache Only mode (no grouper or PI) usually requires preloaded GT to function meaningfully
+        if not use_grouper and not use_param_identifier and not preload_gt:
+             raise ValueError(f"Dataset {dataset}: Both 'use_grouper' and 'use_param_identifier' are False, and 'preload_ground_truth' is also False. The cache needs either a grouper, a param identifier, or pre-loaded templates to function.")
+
 
         # 4. Checkpoints
         # Grouper Checkpoint
@@ -211,9 +215,11 @@ if __name__ == "__main__":
                 'device': args.device if args.device else hset.get('device', 'cpu'),
                 'min_match_prob': float(hset.get('min_match_prob', 0.5)),
                 'use_grouper': use_grouper,
+                'use_param_identifier': use_param_identifier,
                 'param_id_checkpoint': param_id_ckpt if use_param_identifier else None,
                 'preload_ground_truth': preload_gt,
             },
+
             otc=args.oracle_template_correction,
             complex=args.complex,
             frequent=args.frequent,
