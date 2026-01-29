@@ -225,53 +225,28 @@ class LogParser:
 
         line_re = self._format_to_regex(self.params.log_format)
 
-        line_ids: List[int] = []
-        contents: List[str] = []
-        with in_log.open("r", encoding="utf-8", errors="ignore") as fh:
-            for idx, line in enumerate(fh, start=1):
-                s = line.rstrip("\n")
-                m = line_re.match(s)
-                content = m.group("Content") if (m and "Content" in m.groupdict()) else s
-                line_ids.append(idx)
-                contents.append(content)
+        # Open output file for streaming write
+        with open(out_csv, "w", newline="", encoding="utf-8") as f_out:
+            writer = csv.writer(f_out, quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(["LineId", "Content", "EventId", "EventTemplate"])
 
+            with in_log.open("r", encoding="utf-8", errors="ignore") as fh:
+                print(f"Start parsing {log_file_basename} (streaming mode)...")
                 
+                for idx, line in enumerate(fh, start=1):
+                    s = line.rstrip("\n")
+                    m = line_re.match(s)
+                    content = m.group("Content") if (m and "Content" in m.groupdict()) else s
+                    
+                    if not content:
+                        gid = -1
+                        tpl = ""
+                    else:
+                        gid, tpl = hp.group(content)
+                    
+                    writer.writerow([idx, content, gid, tpl])
+
+                    if idx % 5000 == 0:
+                         print(f"Parsed {idx} lines...")
                 
-                
-
-
-
-
-        event_ids: List[int] = []
-        event_templates: List[str] = []
-        total_lines = len(contents)
-        for i, text in enumerate(contents):
-            if not text:
-                event_ids.append(-1)
-                event_templates.append("")
-                continue
-            gid, tpl = hp.group(text)
-            event_ids.append(int(gid))
-            event_templates.append(str(tpl))
-            
-            if (i + 1) % 5000 == 0:
-                print(f"Parsed {i+1}/{total_lines} lines...")
-
-        # Post-process: Map all lines to their FINAL refined template for this group
-        # This fixes the "template snapshot" issue where early lines keep unrefined strings.
-        #final_templates = {gid: tpl for gid, tpl in hp.grouper.templates()}
-        #for i in range(len(event_ids)):
-        #    gid = event_ids[i]
-        #    if gid != -1 and gid in final_templates:
-        #        event_templates[i] = final_templates[gid]
-
-
-        out_df = pd.DataFrame(
-            {
-                "LineId": line_ids,
-                "Content": contents,
-                "EventId": event_ids,
-                "EventTemplate": event_templates,
-            }
-        )
-        out_df.to_csv(out_csv, index=False, quoting=csv.QUOTE_MINIMAL)
+                print(f"Finished parsing {idx} lines.")
