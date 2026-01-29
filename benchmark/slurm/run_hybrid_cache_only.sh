@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --output=Log/%x_%j.out
 #SBATCH --error=Log/%x_%j.err
-#SBATCH --time=4:00:00
+#SBATCH --time=2-00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4

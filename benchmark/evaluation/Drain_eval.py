@@ -79,7 +79,7 @@ if __name__ == "__main__":
     repo_input_base = repo_datasets / ("full" if data_type == "full" else "2k")
 
     input_dir = str(lh_input_base) # default for messages
-    output_dir = f"../../result/result_Drain_{data_type}"
+    output_dir = str(bench_root / f"result/result_Drain_{data_type}")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
