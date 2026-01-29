@@ -43,7 +43,7 @@ DATASETS_2K = [
 #    "Mac",
 #    "OpenSSH",
 #    "Spark",
-    "Thunderbird",
+#    "Thunderbird",
     "BGL",
     "HDFS",
 ]
