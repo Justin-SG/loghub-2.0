@@ -21,4 +21,4 @@ conda activate "$CONDA_ENV_PREFIX/$CONDA_ENV_NAME" || {
 }
 
 echo "[JOB] Hybrid Parser: Cache + Log Grouper"
-python datasets/loghub-2.0/benchmark/evaluation/Hybrid_eval.py --full_data --run_name Run_CacheGrouper --device cpu
+python datasets/loghub-2.0/benchmark/evaluation/Hybrid_eval.py --full_data --run_name Run_CacheGrouper_No_regex --device cpu

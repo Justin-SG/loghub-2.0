@@ -22,4 +22,4 @@ conda activate "$CONDA_ENV_PREFIX/$CONDA_ENV_NAME" || {
 }
 
 echo "[JOB] Hybrid Parser: Cache Only (Baseline)"
-python datasets/loghub-2.0/benchmark/evaluation/Hybrid_eval.py --full_data --run_name Run_CacheOnly --device cpu --no_grouper --preload_ground_truth
+python datasets/loghub-2.0/benchmark/evaluation/Hybrid_eval.py --full_data --run_name Run_CacheOnly_No_regex --device cpu --no_grouper --preload_ground_truth
