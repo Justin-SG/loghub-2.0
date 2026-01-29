@@ -32,20 +32,20 @@ from logparser.Hybrid import LogParser
 
 
 DATASETS_2K = [
-#    "Proxifier",
-#    "Linux",
-#    "Apache",
-#    "Zookeeper",
-#    "Hadoop",
-#    "HealthApp",
-#    "OpenStack",
-#    "HPC",
-#    "Mac",
-#    "OpenSSH",
-#    "Spark",
+    "Proxifier",
+    "Linux",
+    "Apache",
+    "Zookeeper",
+    "Hadoop",
+    "HealthApp",
+    "OpenStack",
+    "HPC",
+    "Mac",
+    "OpenSSH",
+    "Spark",
     "HDFS",
-#    "Thunderbird",
-#    "BGL",
+    "Thunderbird",
+    "BGL",
 ]
 
 DATASETS_FULL = DATASETS_2K.copy()
