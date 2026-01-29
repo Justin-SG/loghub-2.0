@@ -108,15 +108,20 @@ if __name__ == "__main__":
         
         if candidate1.exists():
             input_dir_ds = str(lh_input_base)
+            print(f"Selected candidate 1 (LH CSV): {candidate1}")
         elif candidate2.exists():
             input_dir_ds = str(repo_input_base)
+            print(f"Selected candidate 2 (Repo CSV): {candidate2}")
         elif candidate3.exists():
              input_dir_ds = str(lh_input_base)
+             print(f"Selected candidate 3 (LH Log): {candidate3}")
         elif candidate4.exists():
              input_dir_ds = str(repo_input_base)
+             print(f"Selected candidate 4 (Repo Log): {candidate4}")
         else:
             # fallback to lh even if missing
             input_dir_ds = str(lh_input_base if lh_input_base.exists() else repo_input_base)
+            print(f"Fallback selected: {input_dir_ds} (Candidates not found: {candidate1}, {candidate2}, {candidate3}, {candidate4})")
 
         indir = os.path.join(input_dir_ds, os.path.dirname(log_file))
         if os.path.exists(os.path.join(output_dir, f"{dataset}_{data_type}.log_structured.csv")):
