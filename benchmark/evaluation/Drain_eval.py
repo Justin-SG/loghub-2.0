@@ -16,7 +16,8 @@ Copyright (C) 2022 University of Luxembourg
 import sys
 import os
 
-sys.path.append('../')
+# sys.path.append('../')
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../"))
 
 from old_benchmark.Drain_benchmark import benchmark_settings
 from logparser.Drain import LogParser
@@ -62,8 +63,18 @@ datasets_full = [
 
 if __name__ == "__main__":
     args = common_args()
+    from pathlib import Path
     data_type = "full" if args.full_data else "2k"
-    input_dir = f"../../{data_type}_dataset/"
+    
+    # Resolve base locations (two candidates for data)
+    # .../eval.py -> .../benchmark -> .../loghub-2.0
+    bench_root = Path(__file__).resolve().parents[1]  
+    lh_root = bench_root.parent  
+    lh_input_base = lh_root / f"{data_type}_dataset"
+    repo_datasets = lh_root.parent  # .../datasets
+    repo_input_base = repo_datasets / ("full" if data_type == "full" else "2k")
+
+    input_dir = str(lh_input_base) # default for messages
     output_dir = f"../../result/result_Drain_{data_type}"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -82,7 +93,25 @@ if __name__ == "__main__":
     for dataset in datasets:
         setting = benchmark_settings[dataset]
         log_file = setting['log_file'].replace("_2k", f"_{data_type}")
-        indir = os.path.join(input_dir, os.path.dirname(log_file))
+        
+        # Decide input_dir per dataset by checking which base contains the oracle CSV
+        log_base = os.path.dirname(log_file)
+        log_name = os.path.basename(log_file)
+        candidate1 = lh_input_base / log_base / f"{log_name}_structured.csv"
+        candidate2 = repo_input_base / log_base / f"{log_name}_structured.csv"
+        candidate3 = lh_input_base / log_base / log_name # Check for the log file itself
+        
+        if candidate1.exists():
+            input_dir_ds = str(lh_input_base)
+        elif candidate2.exists():
+            input_dir_ds = str(repo_input_base)
+        elif candidate3.exists():
+             input_dir_ds = str(lh_input_base)
+        else:
+            # fallback to lh even if missing
+            input_dir_ds = str(lh_input_base if lh_input_base.exists() else repo_input_base)
+
+        indir = os.path.join(input_dir_ds, os.path.dirname(log_file))
         if os.path.exists(os.path.join(output_dir, f"{dataset}_{data_type}.log_structured.csv")):
             parser = None
             print("parseing result exist.")
@@ -92,7 +121,7 @@ if __name__ == "__main__":
         print(setting['log_format'])
         evaluator(
             dataset=dataset,
-            input_dir=input_dir,
+            input_dir=input_dir_ds,
             output_dir=output_dir,
             log_file=log_file,
             LogParser=parser,
