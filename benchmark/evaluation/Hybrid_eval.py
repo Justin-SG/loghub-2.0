@@ -43,9 +43,9 @@ DATASETS_2K = [
 #    "Mac",
 #    "OpenSSH",
 #    "Spark",
-#    "Thunderbird",
-    "BGL",
     "HDFS",
+#    "Thunderbird",
+#    "BGL",
 ]
 
 DATASETS_FULL = DATASETS_2K.copy()
