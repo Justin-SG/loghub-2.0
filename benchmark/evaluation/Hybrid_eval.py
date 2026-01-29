@@ -117,10 +117,17 @@ if __name__ == "__main__":
         log_name = os.path.basename(log_file)
         candidate1 = lh_input_base / log_base / f"{log_name}_structured.csv"
         candidate2 = repo_input_base / log_base / f"{log_name}_structured.csv"
+        candidate3 = lh_input_base / log_base / log_name # Check for the log file itself in lh
+        candidate4 = repo_input_base / log_base / log_name # Check for the log file itself in repo
+
         if candidate1.exists():
             input_dir_ds = str(lh_input_base)
         elif candidate2.exists():
             input_dir_ds = str(repo_input_base)
+        elif candidate3.exists():
+             input_dir_ds = str(lh_input_base)
+        elif candidate4.exists():
+             input_dir_ds = str(repo_input_base)
         else:
             # fallback to lh even if missing; evaluator will report no output
             input_dir_ds = str(lh_input_base if lh_input_base.exists() else repo_input_base)

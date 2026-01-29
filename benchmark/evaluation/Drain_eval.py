@@ -16,8 +16,12 @@ Copyright (C) 2022 University of Luxembourg
 import sys
 import os
 
-# sys.path.append('../')
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../"))
+from pathlib import Path
+
+# Ensure we can import evaluation.* regardless of CWD
+_BENCH_ROOT = Path(__file__).resolve().parents[1]
+if str(_BENCH_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BENCH_ROOT))
 
 from old_benchmark.Drain_benchmark import benchmark_settings
 from logparser.Drain import LogParser
@@ -99,7 +103,8 @@ if __name__ == "__main__":
         log_name = os.path.basename(log_file)
         candidate1 = lh_input_base / log_base / f"{log_name}_structured.csv"
         candidate2 = repo_input_base / log_base / f"{log_name}_structured.csv"
-        candidate3 = lh_input_base / log_base / log_name # Check for the log file itself
+        candidate3 = lh_input_base / log_base / log_name # Check for the log file itself in lh
+        candidate4 = repo_input_base / log_base / log_name # Check for the log file itself in repo
         
         if candidate1.exists():
             input_dir_ds = str(lh_input_base)
@@ -107,6 +112,8 @@ if __name__ == "__main__":
             input_dir_ds = str(repo_input_base)
         elif candidate3.exists():
              input_dir_ds = str(lh_input_base)
+        elif candidate4.exists():
+             input_dir_ds = str(repo_input_base)
         else:
             # fallback to lh even if missing
             input_dir_ds = str(lh_input_base if lh_input_base.exists() else repo_input_base)
