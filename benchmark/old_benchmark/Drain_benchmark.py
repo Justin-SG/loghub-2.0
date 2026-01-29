@@ -47,7 +47,8 @@ benchmark_settings = {
     'BGL': {
         'log_file': 'BGL/BGL_2k.log',
         'log_format': '<Label> <Timestamp> <Date> <Node> <Time> <NodeRepeat> <Type> <Component> <Level> <Content>',
-        'regex': [r'core\.\d+'],
+        #'regex': [r'core\.\d+'],
+        'regex': [],
         'st': 0.5,
         'depth': 4        
         },
@@ -55,7 +56,8 @@ benchmark_settings = {
     'HPC': {
         'log_file': 'HPC/HPC_2k.log',
         'log_format': '<LogId> <Node> <Component> <State> <Time> <Flag> <Content>',
-        'regex': [r'=\d+'],
+        #'regex': [r'=\d+'],
+        'regex': [],
         'st': 0.5,
         'depth': 4
         },
@@ -127,7 +129,8 @@ benchmark_settings = {
     'OpenStack': {
         'log_file': 'OpenStack/OpenStack_2k.log',
         'log_format': '<Logrecord> <Date> <Time> <Pid> <Level> <Component> \[<ADDR>\] <Content>',
-        'regex': [r'((\d+\.){3}\d+,?)+', r'/.+?\s', r'\d+'],
+        #'regex': [r'((\d+\.){3}\d+,?)+', r'/.+?\s', r'\d+'],
+        'regex': [r'((\d+\.){3}\d+,?)+', r'\d+'],
         'st': 0.5,
         'depth': 5
         },
@@ -135,7 +138,8 @@ benchmark_settings = {
     'Mac': {
         'log_file': 'Mac/Mac_2k.log',
         'log_format': '<Month>  <Date> <Time> <User> <Component>\[<PID>\]( \(<Address>\))?: <Content>',
-        'regex': [r'([\w-]+\.){2,}[\w-]+'],
+        #'regex': [r'([\w-]+\.){2,}[\w-]+'],
+        'regex': [],
         'st': 0.7,
         'depth': 6   
         },

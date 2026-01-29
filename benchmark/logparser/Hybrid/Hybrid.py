@@ -78,6 +78,9 @@ class Params:
     checkpoint_dir: Optional[str] = None
     device: str = "cpu"
     min_match_prob: float = 0.5
+    param_id_checkpoint: Optional[str] = None
+    use_grouper: bool = True
+    preload_ground_truth: bool = False
 
 
 class LogParser:
@@ -87,15 +90,31 @@ class LogParser:
     """
 
     def __init__(self, **kwargs):
-        self.params = Params(dataset=kwargs.pop("dataset"), **kwargs)  # type: ignore[arg-type]
+        self.params = Params(
+            dataset=kwargs.pop("dataset"),
+            # map possible kwargs to Params fields if they are passed directly
+            **{k: v for k, v in kwargs.items() if k in Params.__annotations__}
+        )
         self._parser: Optional[HybridParser] = None
 
     @staticmethod
     def _format_to_regex(log_format: str) -> re.Pattern:
-        pat = re.escape(log_format)
-        pat = re.sub(r"\\<([A-Za-z0-9_]+)\\>", r"(?P<\1>.*?)", pat)
-        pat = re.sub(r"\\\s+", r"\\s+", pat)
-        return re.compile(r"^" + pat + r"$")
+        """
+        Function to generate regular expression to split log messages.
+        Adapted from Drain's implementation to support regex characters in log_format.
+        """
+        splitters = re.split(r'(<[^<>]+>)', log_format)
+        regex = ''
+        for k in range(len(splitters)):
+            if k % 2 == 0:
+                # Do not escape splitters as they might contain regex syntax (like \[ or ()?)
+                splitter = splitters[k]
+                splitter = re.sub(' +', r'\\s+', splitter)
+                regex += splitter
+            else:
+                header = splitters[k].strip('<').strip('>')
+                regex += '(?P<%s>.*?)' % header
+        return re.compile(r"^" + regex + r"$")
 
     def _resolve_checkpoint(self) -> str:
         # 1) Explicit param override (from Hybrid_benchmark mapping via Hybrid_eval)
@@ -133,8 +152,68 @@ class LogParser:
         device = self.params.device or os.environ.get("HP_DEVICE", "cpu")
         min_prob = float(os.environ.get("HP_MIN_MATCH_PROB", self.params.min_match_prob))
 
-        hp = HybridParser(checkpoint_path=ckpt_dir, device=device, min_match_prob=min_prob)
+        # Resolve param_id_checkpoint: prefer env var, then params
+        pid_ckpt = os.environ.get("HP_PARAM_ID_CHECKPOINT", self.params.param_id_checkpoint)
+        
+        # Resolve use_grouper: prefer env var (as string "true"/"false"), then params
+        use_grouper_env = os.environ.get("HP_USE_GROUPER")
+        if use_grouper_env is not None:
+             use_grouper = use_grouper_env.lower() in ("true", "1", "yes")
+        else:
+             use_grouper = self.params.use_grouper
+
+        hp = HybridParser(
+            checkpoint_path=ckpt_dir,
+            device=device,
+            min_match_prob=min_prob,
+            param_id_checkpoint=pid_ckpt,
+            use_grouper=use_grouper
+        )
         self._parser = hp
+
+        # --- OPTIONAL: Pre-load Ground Truth Templates for Cache Benchmark ---
+        # If use_grouper=False and we are in a benchmark context, we might want to "cheat" and load GT.
+        # Check params or env var? 
+        # User asked for "implement ground truth preloading". 
+        # I'll check a new flag in params: 'preload_ground_truth' (or inferred from config?)
+        # Let's add 'preload_gt' to the Params or just check kwargs.
+        # Actually Hybrid_eval can pass it.
+        
+        if self.params.preload_ground_truth:
+            print("Preloading ground truth templates...")
+            # We need to find the ground truth file. 
+            # Ideally the benchmark runner knows where it is.
+            # In Hybrid_eval.py:
+            # candidate1 = lh_input_base / log_base / f"{log_name}_structured.csv" (Oracle)
+            # The 'indir' param passed to LogParser is usually the directory CONTAINING the log file.
+            # The structured file is usually named "<LogName>_structured.csv".
+            
+            # The log_file_basename is passed to `parse`.
+            # Usually: `Apache_2k.log` -> `Apache_2k.log_structured.csv`
+            gt_path = indir / f"{log_file_basename}_structured.csv"
+            
+            if not gt_path.exists():
+                # Try replacing .log with .log_structured.csv?
+                # Sometimes file is `Apache_2k.log`, oracle is `Apache_2k.log_structured.csv`
+                # Sometimes `Apache.log` -> `Apache_structured.csv` ?
+                pass
+            
+            if gt_path.exists():
+                # import pandas as pd # Removed to avoid shadowing global pd
+                try:
+                    df = pd.read_csv(gt_path)
+
+                    if "EventTemplate" in df.columns:
+                        unique_templates = df["EventTemplate"].dropna().unique().tolist()
+                        hp.bootstrap_cache(unique_templates)
+                        print(f"Bootstrapped cache with {len(unique_templates)} templates.")
+                    else:
+                        print(f"Warning: 'EventTemplate' column not found in {gt_path}")
+                except Exception as e:
+                    print(f"Failed to preload GT: {e}")
+            else:
+                 print(f"Ground truth file not found at {gt_path}, skipping preload.")
+
 
         line_re = self._format_to_regex(self.params.log_format)
 
@@ -149,6 +228,12 @@ class LogParser:
                     content = re.sub(rx, "<*>", content)
                 line_ids.append(idx)
                 contents.append(content)
+                
+                
+                
+
+
+
 
         event_ids: List[int] = []
         event_templates: List[str] = []

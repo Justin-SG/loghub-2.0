@@ -45,7 +45,7 @@ def prepare_results(output_dir, otc, complex, frequent):
 
 
 def is_file_empty(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
         content = file.read()
         return len(content) == 0
 

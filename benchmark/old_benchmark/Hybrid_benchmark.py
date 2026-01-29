@@ -1,89 +1,48 @@
 """
-Hybrid benchmark settings (parallel to Drain_benchmark.py),
-used to hardcode the model checkpoint per dataset.
-
-For each dataset, set 'checkpoint_dir' to the absolute directory
-that contains model.pt and config.json. Optional fields:
- - device: 'cpu' or 'cuda'
- - min_match_prob: float threshold for matching
-
-Example (Windows path):
-  r"C:\\Users\\<you>\\...\\results\\actual\\...\\fold_0_Apache"
+Hybrid benchmark settings.
+Defines model paths and default parameters for each dataset.
 """
-BASE_DIR = r"C:\Users\schoe\Desktop\master\test_code\master\results\actual"
-GRID_FOLDER = r"\nested_lodo_grid_1757385547"
-CONFIG = r"\inner\batch_size=4096,bidirectional=True,device=cuda,early_stop=100,embed_dim=2,epochs=5,hidden_size=25,layers=3,lr=0.001,model=lstm,seed=42,use_projection=False,weight_decay=0.0001"
+from pathlib import Path
 
+# Assume we are running from within the repo, find the root
+# Location: datasets/loghub-2.0/benchmark/old_benchmark/Hybrid_benchmark.py
+# Root:     (3 levels up) -> datasets -> loghub-2.0 -> benchmark 
+# RepoRoot: (3 more levels up?) -> master
+# Actually, let's just use absolute paths based on what the user provided or relative to this file?
+# User said: "The final models for each pipeline part can currently be found in @[thesis_work/data]"
+# We need to construct absolute paths dynamically or assume a fixed structure relative to repo root.
 
-hybrid_settings = {
-    "Proxifier": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_10_Proxifier" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
+# For robustness, we will try to find the repo root.
+# Current file: .../datasets/loghub-2.0/benchmark/old_benchmark/Hybrid_benchmark.py
+# Repo root: .../ (containing thesis_work, datasets, etc.)
+# Count parents: 1(old_benchmark), 2(benchmark), 3(loghub-2.0), 4(datasets), 5(master/repo_root)
+
+_file = Path(__file__).resolve()
+REPO_ROOT = _file.parents[4]
+
+LOG_GROUPER_DIR = REPO_ROOT / "thesis_work/data/log_grouper"
+PARAM_ID_DIR = REPO_ROOT / "thesis_work/data/param_identifier"
+
+hybrid_settings = {}
+
+datasets = [
+    "Proxifier", "Linux", "Apache", "Zookeeper", "Hadoop", "HealthApp", "OpenStack",
+    "HPC", "Mac", "OpenSSH", "Spark", "Thunderbird", "BGL", "HDFS"
+]
+
+for ds in datasets:
+    hybrid_settings[ds] = {
+        # Checkpoint for Log Grouper (Model .pt file)
+        "checkpoint_dir": str(LOG_GROUPER_DIR / f"model_{ds}.pt"),
+        
+         # Checkpoint for Param Identifier (Directory or File)
+        "param_id_checkpoint_dir": str(PARAM_ID_DIR / ds),
+        
+        "device": "cpu", # Default device, override with --device
         "min_match_prob": 0.5,
-    },
-    "Linux": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_6_Linux" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "Apache": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_0_Apache" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "Zookeeper": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_13_Zookeeper" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "Hadoop": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_4_Hadoop" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "HealthApp": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_5_HealthApp" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "OpenStack": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_9_OpenStack" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "HPC": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_3_HPC" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "Mac": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_7_Mac" + CONFIG + r"\fold_9_Proxifier",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "OpenSSH": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_8_OpenSSH" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "Spark": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_11_Spark" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "Thunderbird": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_12_Thunderbird" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "BGL": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_1_BGL" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-    "HDFS": {
-        "checkpoint_dir": BASE_DIR + GRID_FOLDER + r"\outer_2_HDFS" + CONFIG + r"\fold_6_Mac",
-        "device": "cpu",
-        "min_match_prob": 0.5,
-    },
-}
+        
+        # Default flags (Overridden by CLI)
+        "use_grouper": False, 
+        "use_param_identifier": False,
+        "preload_ground_truth": False,
+    }
