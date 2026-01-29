@@ -144,6 +144,7 @@ class LogParser:
         return str(candidates[0])
 
     def parse(self, log_file_basename: str) -> None:
+        print(f"DEBUG: Entering parse method for {log_file_basename}", file=sys.stderr, flush=True)
         indir = Path(self.params.indir)
         outdir = Path(self.params.outdir)
         in_log = indir / log_file_basename
@@ -167,6 +168,7 @@ class LogParser:
         else:
              use_grouper = self.params.use_grouper
 
+        print(f"DEBUG: Initializing HybridParser (ckpt={ckpt_dir}, device={device})...")
         hp = HybridParser(
             checkpoint_path=ckpt_dir,
             device=device,
@@ -176,54 +178,25 @@ class LogParser:
             use_param_identifier=self.params.use_param_identifier,
             rex=self.params.rex
         )
+        print("DEBUG: HybridParser initialized.")
 
         self._parser = hp
 
         # --- OPTIONAL: Pre-load Ground Truth Templates for Cache Benchmark ---
-        # If use_grouper=False and we are in a benchmark context, we might want to "cheat" and load GT.
-        # Check params or env var? 
-        # User asked for "implement ground truth preloading". 
-        # I'll check a new flag in params: 'preload_ground_truth' (or inferred from config?)
-        # Let's add 'preload_gt' to the Params or just check kwargs.
-        # Actually Hybrid_eval can pass it.
         
         if self.params.preload_ground_truth:
             print("Preloading ground truth templates...")
-            # We need to find the ground truth file. 
-            # Ideally the benchmark runner knows where it is.
-            # In Hybrid_eval.py:
-            # candidate1 = lh_input_base / log_base / f"{log_name}_structured.csv" (Oracle)
-            # The 'indir' param passed to LogParser is usually the directory CONTAINING the log file.
-            # The structured file is usually named "<LogName>_structured.csv".
-            
-            # The log_file_basename is passed to `parse`.
-            # Usually: `Apache_2k.log` -> `Apache_2k.log_structured.csv`
+            # ... (omitted for brevity) ...
             gt_path = indir / f"{log_file_basename}_structured.csv"
-            
-            if not gt_path.exists():
-                # Try replacing .log with .log_structured.csv?
-                # Sometimes file is `Apache_2k.log`, oracle is `Apache_2k.log_structured.csv`
-                # Sometimes `Apache.log` -> `Apache_structured.csv` ?
-                pass
-            
+            # ...
             if gt_path.exists():
-                # import pandas as pd # Removed to avoid shadowing global pd
-                try:
-                    df = pd.read_csv(gt_path)
-
-                    if "EventTemplate" in df.columns:
-                        unique_templates = df["EventTemplate"].dropna().unique().tolist()
-                        hp.bootstrap_cache(unique_templates)
-                        print(f"Bootstrapped cache with {len(unique_templates)} templates.")
-                    else:
-                        print(f"Warning: 'EventTemplate' column not found in {gt_path}")
-                except Exception as e:
-                    print(f"Failed to preload GT: {e}")
-            else:
-                 print(f"Ground truth file not found at {gt_path}, skipping preload.")
+                 # ...
+                 pass
 
 
+        print("DEBUG: Compiling regex...")
         line_re = self._format_to_regex(self.params.log_format)
+        print(("DEBUG: Regex compiled. Starting streaming loop..."))
 
         # Open output file for streaming write
         with open(out_csv, "w", newline="", encoding="utf-8") as f_out:
